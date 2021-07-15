@@ -62,10 +62,9 @@ class Renderer(object):
     if y < -1 or y > 1:
       return
 
-    pixelX = ((x+1) * (self.vpWidth / 2) + self.vpX)
-    pixelY = ((y+1) * (self.vpHeight / 2) + self.vpY)
+    pixelX = (x+1) * ((self.vpWidth-1) / 2) + self.vpX
+    pixelY = (y+1) * ((self.vpHeight-1) / 2) + self.vpY
 
-    #if (0 < x < self.width) and (0 < y < self.height):
     self.pixels[int(pixelX)][int(pixelY)] = color or self.curr_color
 
   def glPoint(self, x, y, color = None):

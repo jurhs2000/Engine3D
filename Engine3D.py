@@ -8,7 +8,7 @@ height = 540
 
 rend = Renderer(width, height)
 
-rend.glViewPort(100, 100, 300, 300)
+#rend.glViewPort(100, 100, 300, 300)
 
 rend.glClearColor(0.7, 0.3, 0.1)
 rend.glClear()

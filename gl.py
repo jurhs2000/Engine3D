@@ -72,7 +72,7 @@ class Renderer(object):
     if (x < self.vpX) or (x >= self.vpWidthMax) or (y < self.vpY) or (y >= self.vpHeightMax):
       return
     
-    if (0 < x < self.width) and (0 < y < self.height):
+    if (0 <= x < self.width) and (0 <= y < self.height):
       self.pixels[int(x)][int(y)] = color or self.curr_color
 
   def glLine(self, vertex0, vertex1, color = None):

@@ -8,14 +8,14 @@ height = 540
 
 rend = Renderer(width, height)
 
-#rend.glViewPort(100, 100, 300, 300)
+#rend.glViewPort(50, 50, 100, 50)
 
 rend.glClearColor(0.7, 0.3, 0.1)
 rend.glClear()
 
 rend.glColor(0.3, 0.7, 0.9)
 
-rend.glPoint(480, 270)
+rend.glPoint(100, 100)
 
 rend.glLine(V2(500,400), V2(100, 300))
 rend.glLine(V2(0,0), V2(50, 530))
@@ -30,10 +30,14 @@ for x in range(width - 1):
   y1 = int((sin((x+1) / 10) * 50) + height/2)
   rend.glLine(V2(x,y0), V2((x+1),y1), color(1, 0, 0))
 
+for x in range(0, width, 5):
+  rend.glLine(V2(x, 0), V2(width, x))
+
 rend.glVertex(0, 0, color(0, 0, 0))
 rend.glVertex(-1, -1, color(0, 0, 0))
 rend.glVertex(-1, 1, color(0, 0, 0))
 rend.glVertex(1, -1, color(0, 0, 0))
 rend.glVertex(1, 1, color(0, 0, 0))
+
 
 rend.glFinish("output.bmp")

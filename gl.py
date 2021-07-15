@@ -62,6 +62,7 @@ class Renderer(object):
     if y < -1 or y > 1:
       return
 
+    # Calculate pixel respect to viewport
     pixelX = (x+1) * ((self.vpWidth-1) / 2) + self.vpX
     pixelY = (y+1) * ((self.vpHeight-1) / 2) + self.vpY
 

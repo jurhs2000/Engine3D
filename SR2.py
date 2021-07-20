@@ -30,13 +30,6 @@ rend.glLine(V2(-1,1), V2(1,-1), color(1,0,0), True)
 # Diagonal, bottom left to top right
 rend.glLine(V2(-1,-1), V2(1,1), color(0,1,0), True)
 
-# rend.glLine(V2(0,0), V2(50, 530))
-# rend.glLine(V2(0,0), V2(959, 539))
-# rend.glLine(V2(200, 100), V2(200, 500))
-# rend.glLine(V2(200, 100), V2(700, 100))
-# rend.glLine(V2(600, 500), V2(600, 50))
-# rend.glLine(V2(800, 50), V2(25, 50))
-
 # Stablishing a viewport
 rend.glViewPort(400, 200, 200, 200)
 
@@ -82,5 +75,45 @@ for x in range(21):
   rend.glLine(V2(((x/10)-1), 1), V2(-1, ((x/10)-1)), color(0.8, 0.1, 0.3), True)
   # right to left
   rend.glLine(V2(1, ((x/10)-1)*-1), V2(((x/10)-1), 1), color(0.8, 0.1, 0.3), True)
+
+# Stablishing a viewport
+rend.glViewPort(0, 0, width, height)
+
+rend.glColor(0.2, 0.4, 1)
+
+# polygon 1
+rend.glLine(V2(10, 10), V2(110, 10))
+rend.glLine(V2(110, 10), V2(110, 110))
+rend.glLine(V2(110, 110), V2(10, 110))
+rend.glLine(V2(10, 110), V2(10, 10))
+
+# polygon 2
+rend.glLine(V2(120, 120), V2(90, 200))
+rend.glLine(V2(90, 200), V2(160, 240))
+rend.glLine(V2(160, 240), V2(230, 200))
+rend.glLine(V2(230, 200), V2(200, 120))
+rend.glLine(V2(200, 120), V2(120, 120))
+
+# polygon 3
+rend.glLine(V2(250, 200), V2(350, 350))
+rend.glLine(V2(350, 350), V2(400, 250))
+rend.glLine(V2(400, 250), V2(250, 200))
+
+# polygon 4
+rend.glLine(V2(300, 80), V2(250, 180))
+rend.glLine(V2(250, 180), V2(450, 180))
+rend.glLine(V2(450, 180), V2(500, 80))
+rend.glLine(V2(500, 80), V2(300, 80))
+
+# polygon 5
+for x in range(200):
+  y0 = int(pow(x-100, 2))
+  y1 = int(pow(x+1-100, 2))
+  rend.glLine(V2(x+400,y0), V2((x+400+1),y1), color(0.9, 0.3, 0.1))
+
+for x in range(400):
+  y0 = int(pow(((x-200)/20), 3))
+  y1 = int(pow((((x-200)+1)/20), 3))
+  rend.glLine(V2(x+100,y0+300), V2((x+100+1),y1+300), color(0.9, 0.3, 0.1))
 
 rend.glFinish("SR2.bmp")

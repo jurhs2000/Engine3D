@@ -103,6 +103,8 @@ class Renderer(object):
     dx = abs(x1 - x0)
     dy = abs(y1 - y0)
 
+    if dx == 0:
+      return
     offset = 0
     limit = 0.5
     m = dy/dx

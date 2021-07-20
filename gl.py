@@ -38,12 +38,17 @@ class Renderer(object):
     self.glViewPort(0, 0, width, height)
 
   def glViewPort(self, x, y, width, height):
-    self.vpX = x if x <= self.width else Exception('x is outside the window')
-    self.vpY = y if y <= self.height else Exception('y is outside the window')
-    self.vpWidth = width if x + width <= self.width else Exception('viewport is outside the window')
-    self.vpHeight = height if y + height <= self.height else Exception('viewport is outside the window')
+    self.vpX = int(x) if x <= self.width else Exception('x is outside the window')
+    self.vpY = int(y) if y <= self.height else Exception('y is outside the window')
+    self.vpWidth = (width) if x + width <= self.width else Exception('viewport is outside the window')
+    self.vpHeight = (height) if y + height <= self.height else Exception('viewport is outside the window')
     self.vpWidthMax = self.vpX + self.vpWidth
     self.vpHeightMax = self.vpY + self.vpHeight
+
+  def glViewPortClear(self, color = None):
+    for x in range(self.vpX, self.vpX + self.vpWidth):
+      for y in range(self.vpY, self.vpY + self.vpHeight):
+        self.glPoint(x, y, color)
 
   def glClearColor(self, r, g, b):
     self.clear_color = color(r, g, b)
@@ -63,8 +68,8 @@ class Renderer(object):
       return
 
     # Calculate pixel respect to viewport
-    pixelX = (x+1) * ((self.vpWidth-1) / 2) + self.vpX
-    pixelY = (y+1) * ((self.vpHeight-1) / 2) + self.vpY
+    pixelX = int((x+1) * ((self.vpWidth-1) / 2) + self.vpX)
+    pixelY = int((y+1) * ((self.vpHeight-1) / 2) + self.vpY)
 
     self.pixels[int(pixelX)][int(pixelY)] = color or self.curr_color
 
@@ -76,11 +81,11 @@ class Renderer(object):
     if (0 <= x < self.width) and (0 <= y < self.height):
       self.pixels[int(x)][int(y)] = color or self.curr_color
 
-  def glLine(self, vertex0, vertex1, color = None):
-    x0 = vertex0.x
-    x1 = vertex1.x
-    y0 = vertex0.y
-    y1 = vertex1.y
+  def glLine(self, vertex0, vertex1, color = None, NDC = False):
+    x0 = int((vertex0.x + 1) * (self.vpWidth / 2) + self.vpX) if NDC else vertex0.x
+    x1 = int((vertex1.x + 1) * (self.vpWidth / 2) + self.vpX) if NDC else vertex1.x
+    y0 = int((vertex0.y + 1) * (self.vpHeight / 2) + self.vpY) if NDC else vertex0.y
+    y1 = int((vertex1.y + 1) * (self.vpHeight / 2) + self.vpY) if NDC else vertex1.y
 
     dx = abs(x1 - x0)
     dy = abs(y1 - y0)

@@ -40,4 +40,4 @@ rend.glVertex(1, -1, color(0, 0, 0))
 rend.glVertex(1, 1, color(0, 0, 0))
 
 
-rend.glFinish("output.bmp")
+rend.glFinish("outputs/output.bmp")

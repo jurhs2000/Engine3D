@@ -116,4 +116,4 @@ for x in range(400):
   y1 = int(pow((((x-200)+1)/20), 3))
   rend.glLine(V2(x+100,y0+300), V2((x+100+1),y1+300), color(0.9, 0.3, 0.1))
 
-rend.glFinish("SR2.bmp")
+rend.glFinish("outputs/SR2.bmp")

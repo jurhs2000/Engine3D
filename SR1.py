@@ -37,4 +37,4 @@ rend.glVertex(-1, 1, color(0, 0, 1))
 rend.glVertex(1, -1, color(0, 0, 1))
 rend.glVertex(1, 1, color(0, 0, 1))
 
-rend.glFinish("SR1.bmp")
+rend.glFinish("outputs/SR1.bmp")

@@ -2,6 +2,7 @@
 
 import struct
 from collections import namedtuple
+from objLoader import Obj
 
 def char(c):
   # 1 byte
@@ -121,6 +122,21 @@ class Renderer(object):
         y += 1 if y0 < y1 else -1
         limit += 1
 
+  def glLoadModel(self, filename, translate = V2(0.0,0.0), scale = V2(1.0,1.0)):
+    model = Obj(filename)
+    for face in model.faces:
+      vertCount = len(face)
+      for vertex in range(vertCount):
+        index0 = face[vertex][0] - 1
+        index1 = face[(vertex+1) % vertCount][0] - 1
+        vert0 = model.vertexes[index0]
+        vert1 = model.vertexes[index1]
+        x0 = int(vert0[0] * scale.x + translate.x)
+        y0 = int(vert0[1] * scale.y + translate.y)
+        x1 = int(vert1[0] * scale.x + translate.x)
+        y1 = int(vert1[1] * scale.y + translate.y)
+        self.glLine(V2(x0, y0), V2(x1, y1))
+
   def glFinish(self, filename):
     # Creates a BMP file and fills it with the data inside self.pixels
     with open(filename, "wb") as file:
@@ -163,4 +179,3 @@ class Renderer(object):
       for y in range(self.height):
         for x in range(self.width):
           file.write(self.pixels[x][y])
-

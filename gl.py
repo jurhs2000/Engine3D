@@ -137,6 +137,44 @@ class Renderer(object):
         y1 = int(vert1[1] * scale.y + translate.y)
         self.glLine(V2(x0, y0), V2(x1, y1))
 
+  def glLineInterceptor(self, vertex0, y, color = None, color_interceptor = None):
+    x0 = vertex0.x
+    x1 = vertex0.y
+    width = x1 - x0
+    fill = False
+    for x in range(1, width):
+      if (self.pixels[x0 + x][y] == color_interceptor and self.pixels[x0 + x + 1][y] != color_interceptor):
+        fill = not fill
+      if (fill):
+        self.glPoint(x0+x, y)
+
+  # fill a polygon from an array of points
+  def glFillPolygon(self, points):
+    top = 0
+    bottom = self.height
+    left = self.width
+    right = 0
+    for i in range(len(points)):
+      if points[i][0] < left:
+        left = points[i][0]
+      if points[i][0] > right:
+        right = points[i][0]
+      if points[i][1] > top:
+        top = points[i][1]
+      if points[i][1] < bottom:
+        bottom = points[i][1]
+      if i == len(points) - 1:
+        self.glLine(V2(points[i][0], points[i][1]), V2(points[0][0], points[0][1]))
+      else:
+        self.glLine(V2(points[i][0], points[i][1]), V2(points[i+1][0], points[i+1][1]))
+
+    polygonHeight = top - bottom
+    polygonWidth = right - left
+
+    for i in range(1, polygonHeight):
+      # TODO: enviar puntos para que sepa los interceptos
+      self.glLineInterceptor(V2(left, right), bottom+i, color_interceptor=self.curr_color)
+
   def glFinish(self, filename):
     # Creates a BMP file and fills it with the data inside self.pixels
     with open(filename, "wb") as file:

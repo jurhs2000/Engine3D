@@ -82,7 +82,7 @@ class Renderer(object):
     if (0 <= x < self.width) and (0 <= y < self.height):
       self.pixels[int(x)][int(y)] = color or self.curr_color
 
-  def glLine(self, vertex0, vertex1, color = None, NDC = False):
+  def glLine(self, vertex0, vertex1, color = None, NDC = False, buffer = None):
     x0 = int((vertex0.x + 1) * (self.vpWidth / 2) + self.vpX) if NDC else vertex0.x
     x1 = int((vertex1.x + 1) * (self.vpWidth / 2) + self.vpX) if NDC else vertex1.x
     y0 = int((vertex0.y + 1) * (self.vpHeight / 2) + self.vpY) if NDC else vertex0.y
@@ -113,14 +113,22 @@ class Renderer(object):
 
     for x in range(x0, x1 + 1):
       if steep:
-        self.glPoint(y, x, color)
+        if (buffer != None):
+          buffer[y][x] = color or self.curr_color
+        else:
+          self.glPoint(y, x, color)
       else:
-        self.glPoint(x, y, color)
+        if (buffer != None):
+          buffer[x][y] = color or self.curr_color
+        else:
+          self.glPoint(x, y, color)
 
       offset += m
       if offset >= limit:
         y += 1 if y0 < y1 else -1
         limit += 1
+
+    return buffer
 
   def glLoadModel(self, filename, translate = V2(0.0,0.0), scale = V2(1.0,1.0)):
     model = Obj(filename)
@@ -137,19 +145,60 @@ class Renderer(object):
         y1 = int(vert1[1] * scale.y + translate.y)
         self.glLine(V2(x0, y0), V2(x1, y1))
 
-  def glLineInterceptor(self, vertex0, y, color = None, color_interceptor = None):
-    x0 = vertex0.x
-    x1 = vertex0.y
-    width = x1 - x0
+  def glLineInterceptor(self, buffer, width, height, left, bottom, points, colorFill, colorInterceptor):
     fill = False
-    for x in range(1, width):
-      if (self.pixels[x0 + x][y] == color_interceptor and self.pixels[x0 + x + 1][y] != color_interceptor):
-        fill = not fill
-      if (fill):
-        self.glPoint(x0+x, y)
+    interceptions = 0
+    newBuffer = buffer
+    for y in range(1, height):
+      for x in range(width):
+        if (x == width-1):
+          if (newBuffer[x][y] == colorInterceptor):
+            interceptions += 1
+        else:
+          if (newBuffer[x][y] == colorInterceptor and newBuffer[x+1][y] == False):
+            fill = not fill
+            interceptions += 1
+          if (fill):
+            newBuffer[x][y] = colorFill
+
+      if (interceptions < 2):
+        for x in range(width-1):
+          if (newBuffer[x][y] == colorFill):
+            newBuffer[x][y] = False
+      elif (interceptions % 3 == 0):
+        fillTri = False
+        notFillTri = False
+        for x in range(1, width):
+          if (newBuffer[x-1][y] == colorFill and newBuffer[x][y] == colorInterceptor and (x+left, y+bottom) in points):
+            fillTri = True
+            notFillTri = False
+          if (newBuffer[x-1][y] == colorInterceptor and newBuffer[x][y] == colorFill and (x+left, y+bottom) in points):
+            notFillTri = True
+            fillTri = False
+          if (fillTri):
+            if (newBuffer[x-1][y] == colorFill and newBuffer[x][y] == colorFill and (x+left, y+bottom) not in points):
+              notFillTri = True
+              fillTri = False
+            if (fillTri):
+              newBuffer[x][y] = colorFill
+          if (notFillTri):
+            if (newBuffer[x-1][y] == False and newBuffer[x][y] == colorInterceptor):
+              fillTri = True
+              notFillTri = False
+            else:
+              newBuffer[x][y] = False
+
+      fill = False
+      interceptions = 0
+
+    return newBuffer
 
   # fill a polygon from an array of points
-  def glFillPolygon(self, points):
+  def glFillPolygon(self, points, colorBorder = None , colorFill = None):
+    if colorBorder == None:
+      colorBorder = self.curr_color
+    if colorFill == None:
+      colorFill = self.curr_color
     top = 0
     bottom = self.height
     left = self.width
@@ -163,17 +212,86 @@ class Renderer(object):
         top = points[i][1]
       if points[i][1] < bottom:
         bottom = points[i][1]
+
+    polygonHeight = top - bottom + 1
+    polygonWidth = right - left + 1
+
+    polygonBuffer = [ [False for y in range(polygonHeight)] for x in range(polygonWidth) ]
+
+    for i in range(len(points)):
       if i == len(points) - 1:
-        self.glLine(V2(points[i][0], points[i][1]), V2(points[0][0], points[0][1]))
+        polygonBuffer = self.glLine(V2(points[i][0] - left, points[i][1] - bottom), V2(points[0][0] - left, points[0][1] - bottom), color=colorBorder, buffer=polygonBuffer)
       else:
-        self.glLine(V2(points[i][0], points[i][1]), V2(points[i+1][0], points[i+1][1]))
+        polygonBuffer = self.glLine(V2(points[i][0] - left, points[i][1] - bottom), V2(points[i+1][0] - left, points[i+1][1] - bottom), color=colorBorder, buffer=polygonBuffer)
+    
+    polygonBuffer = self.glLineInterceptor(polygonBuffer, polygonWidth, polygonHeight, left, bottom, points, colorFill=colorFill, colorInterceptor=colorBorder)
 
-    polygonHeight = top - bottom
-    polygonWidth = right - left
+    for i in range(len(points)):
+      if i == len(points) - 1:
+        polygonBuffer = self.glLine(V2(points[i][0] - left, points[i][1] - bottom), V2(points[0][0] - left, points[0][1] - bottom), color=colorBorder, buffer=polygonBuffer)
+      else:
+        polygonBuffer = self.glLine(V2(points[i][0] - left, points[i][1] - bottom), V2(points[i+1][0] - left, points[i+1][1] - bottom), color=colorBorder, buffer=polygonBuffer)
+    
+    for x in range(polygonWidth):
+      for y in range(polygonHeight):
+        if (polygonBuffer[x][y] == colorFill and polygonBuffer[x][y-1] == False):
+          polygonBuffer[x][y] = False
+    
+    for x in range(polygonWidth):
+      for y in range(polygonHeight):
+        if polygonBuffer[x][y] == colorBorder:
+          self.glPoint(x+left, y+bottom, color=colorBorder)
+        elif polygonBuffer[x][y] == colorFill:
+          self.glPoint(x+left, y+bottom, color=colorFill)
 
-    for i in range(1, polygonHeight):
-      # TODO: enviar puntos para que sepa los interceptos
-      self.glLineInterceptor(V2(left, right), bottom+i, color_interceptor=self.curr_color)
+  def glTriangle(self, A, B, C, color = None):
+    self.glLine(A, B, color=color)
+    self.glLine(B, C, color=color)
+    self.glLine(C, A, color=color)
+
+    if A.y < B.y:
+      A, B = B, A
+    if A.y < C.y:
+      A, C = C, A
+    if B.y < C.y:
+      B, C = C, B
+
+    def flatBottom(v1, v2, v3):
+      d_v2_v1 = (v2.x - v1.x) / (v2.y - v1.y)
+      d_v3_v1 = (v3.x - v1.x) / (v3.y - v1.y)
+
+      x1 = v2.x
+      x2 = v3.x
+
+      for y in range(v2.y, v1.y + 1):
+        self.glLine(V2(int(x1), y), V2(int(x2), y), color=color)
+        x1 += d_v2_v1
+        x2 += d_v3_v1
+
+    def flatTop(v1, v2, v3):
+      d_v3_v1 = (v3.x - v1.x) / (v3.y - v1.y)
+      d_v3_v2 = (v3.x - v2.x) / (v3.y - v2.y)
+
+      x1 = v3.x
+      x2 = v2.x
+
+      for y in range(v3.y, v1.y + 1):
+        self.glLine(V2(int(x1), y), V2(int(x2), y), color=color)
+        x1 += d_v3_v1
+        x2 += d_v3_v2
+    
+    if B.y == C.y:
+      # flat bottom
+      flatBottom(A, B, C)
+    elif A.y == B.y:
+      # flat top
+      flatTop(A, B, C)
+    else:
+      # Divide triangle and draw two triangles
+      # teorema de intercepto
+      D = V2(A.x + ((B.y - A.y) / (C.y - A.y)) * (C.x - A.x), B.y)
+      flatBottom(A, B, D)
+      flatTop(B, D, C)
 
   def glFinish(self, filename):
     # Creates a BMP file and fills it with the data inside self.pixels

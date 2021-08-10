@@ -1,8 +1,7 @@
 # Graphics Library
 
-import numpy
 from glTypes import V2, V3, dword, newColor, word
-from glMath import barycentricCoords, cross, dot, norm, substract, transformV3
+from glMath import barycentricCoords, divide, cross, dot, negative, norm, substract, transformV3
 from objLoader import Obj
 
 BLACK = newColor(0, 0, 0)
@@ -118,7 +117,7 @@ class Renderer(object):
   def glLoadModel(self, filename, texture = None, translate = V3(0.0,0.0,0.0), scale = V3(1.0,1.0,1.0), light = V3(0.0,0.0,-1.0)):
     model = Obj(filename)
 
-    light = light / norm(light)
+    light = divide(light, norm(light))
 
     for face in model.faces:
       vertCount = len(face)
@@ -133,10 +132,10 @@ class Renderer(object):
 
       normal = cross(substract(triangleV[1], triangleV[0]), substract(triangleV[2], triangleV[0]))
       if norm(normal) != 0:
-        normal = normal / norm(normal)
+        normal = divide(normal, norm(normal))
       else:
-        normal = numpy.array([0.5, 0.5, 0.5])
-      intensity = dot(normal, -light)
+        normal = V3(0.5, 0.5, 0.5)
+      intensity = dot(normal, negative(light))
       
       if intensity > 1:
         intensity = 1

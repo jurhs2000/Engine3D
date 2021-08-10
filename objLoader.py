@@ -61,6 +61,7 @@ class TextureBMP(object):
     else:
       return newColor(0,0,0)
 
+# tested with jpg, png
 class Texture(object):
   def __init__(self, filename):
     self.filename = filename

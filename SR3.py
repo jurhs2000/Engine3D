@@ -3,9 +3,8 @@
 # Julio Herrera 19402
 # SR3: Obj Models
 
-from glTypes import V3, newColor
-from gl import Renderer
-from numpy import sin
+from src.glTypes import V3
+from src.gl import Renderer
 
 width = 1920
 height = 1080

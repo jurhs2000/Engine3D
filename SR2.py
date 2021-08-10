@@ -3,8 +3,8 @@
 # Julio Herrera 19402
 # SR2: Lines
 
-from glTypes import V2, newColor
-from gl import Renderer
+from src.glTypes import V2, newColor
+from src.gl import Renderer
 from numpy import sin
 
 width = 800

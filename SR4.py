@@ -3,9 +3,9 @@
 # Julio Herrera 19402
 # SR4: Triangulos
 
-from objLoader import TextureBMP, Texture
-from glTypes import V2, V3, newColor
-from gl import Renderer
+from src.objLoader import TextureBMP, Texture
+from src.glTypes import V2, V3, newColor
+from src.gl import Renderer
 
 width = 1920
 height = 1080

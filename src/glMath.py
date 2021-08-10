@@ -1,4 +1,4 @@
-from glTypes import V3
+from src.glTypes import V3
 from math import sqrt, pow
 
 def barycentricCoords(A, B, C, P):

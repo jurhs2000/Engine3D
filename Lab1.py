@@ -3,8 +3,8 @@
 # Julio Herrera 19402
 # Lab1: Filling any polygon
 
-from glTypes import newColor
-from gl import Renderer
+from src.glTypes import newColor
+from src.gl import Renderer
 
 width = 900
 height = 600

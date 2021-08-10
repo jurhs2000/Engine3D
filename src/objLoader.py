@@ -1,6 +1,6 @@
 # Charges an OBJ file
 
-from glTypes import newColor
+from src.glTypes import newColor
 import struct
 from PIL import Image
 

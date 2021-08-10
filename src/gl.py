@@ -1,8 +1,8 @@
 # Graphics Library
 
-from glTypes import V2, V3, dword, newColor, word
-from glMath import barycentricCoords, divide, cross, dot, negative, norm, substract, transformV3
-from objLoader import Obj
+from src.glTypes import V2, V3, dword, newColor, word
+from src.glMath import barycentricCoords, divide, cross, dot, negative, norm, substract, transformV3
+from src.objLoader import Obj
 
 BLACK = newColor(0, 0, 0)
 WHITE = newColor(1, 1, 1)

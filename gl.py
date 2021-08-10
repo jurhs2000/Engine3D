@@ -1,29 +1,12 @@
 # Graphics Library
 
-import struct
-from collections import namedtuple
+import numpy
+from glTypes import V2, V3, dword, newColor, word
+from glMath import barycentricCoords, cross, dot, norm, substract, transformV3
 from objLoader import Obj
 
-def char(c):
-  # 1 byte
-  return struct.pack('=c', c.encode('ascii'))
-
-def word(w):
-  # 2 bytes
-  return struct.pack('=h', w)
-
-def dword(d):
-  # 4 bytes
-  return struct.pack('=l', d)
-
-def color(r, g, b):
-  # values from 0 to 1
-  return bytes([ int(b*255), int(g*255), int(r*255) ])
-
-BLACK = color(0, 0, 0)
-WHITE = color(1, 1, 1)
-
-V2 = namedtuple('Point2', ['x', 'y'])
+BLACK = newColor(0, 0, 0)
+WHITE = newColor(1, 1, 1)
 
 class Renderer(object):
   # Constructor
@@ -52,14 +35,16 @@ class Renderer(object):
         self.glPoint(x, y, color)
 
   def glClearColor(self, r, g, b):
-    self.clear_color = color(r, g, b)
+    self.clear_color = newColor(r, g, b)
 
   def glClear(self):
     # Creates a 2D pixels list and assigns a 3 bytes color for each value
     self.pixels = [ [self.clear_color for y in range(self.height)] for x in range(self.width) ]
+    
+    self.zBuffer = [ [ -float('inf') for y in range(self.height) ] for x in range(self.width) ]
 
   def glColor(self, r, g, b):
-    self.curr_color = color(r, g, b)
+    self.curr_color = newColor(r, g, b)
 
   def glVertex(self, x, y, color = None):
     if x < -1 or x > 1:
@@ -130,20 +115,37 @@ class Renderer(object):
 
     return buffer
 
-  def glLoadModel(self, filename, translate = V2(0.0,0.0), scale = V2(1.0,1.0)):
+  def glLoadModel(self, filename, texture = None, translate = V3(0.0,0.0,0.0), scale = V3(1.0,1.0,1.0), light = V3(0.0,0.0,-1.0)):
     model = Obj(filename)
+
+    light = light / norm(light)
+
     for face in model.faces:
       vertCount = len(face)
-      for vertex in range(vertCount):
-        index0 = face[vertex][0] - 1
-        index1 = face[(vertex+1) % vertCount][0] - 1
-        vert0 = model.vertexes[index0]
-        vert1 = model.vertexes[index1]
-        x0 = int(vert0[0] * scale.x + translate.x)
-        y0 = int(vert0[1] * scale.y + translate.y)
-        x1 = int(vert1[0] * scale.x + translate.x)
-        y1 = int(vert1[1] * scale.y + translate.y)
-        self.glLine(V2(x0, y0), V2(x1, y1))
+      vertices = [None] * vertCount
+      textureV = [None] * vertCount
+      triangleV = [None] * vertCount
+
+      for i in range(vertCount):
+        vertices[i] = model.vertices[face[i][0]-1]
+        textureV[i] = model.textcoords[face[i][1]-1] if texture else 0
+        triangleV[i] = transformV3(vertices[i], translate, scale)
+
+      normal = cross(substract(triangleV[1], triangleV[0]), substract(triangleV[2], triangleV[0]))
+      if norm(normal) != 0:
+        normal = normal / norm(normal)
+      else:
+        normal = numpy.array([0.5, 0.5, 0.5])
+      intensity = dot(normal, -light)
+      
+      if intensity > 1:
+        intensity = 1
+      elif intensity < 0:
+        intensity = 0
+
+      self.glTriangleBarycentric(triangleV[0],triangleV[1],triangleV[2],(textureV[0], textureV[1], textureV[2]),texture = texture,intensity = intensity)
+      if vertCount == 4:
+        self.glTriangleBarycentric(triangleV[0],triangleV[2],triangleV[3],(textureV[0], textureV[2], textureV[3]),texture = texture,intensity = intensity)
 
   def glLineInterceptor(self, buffer, width, height, left, bottom, points, colorFill, colorInterceptor):
     fill = False
@@ -193,7 +195,6 @@ class Renderer(object):
 
     return newBuffer
 
-  # fill a polygon from an array of points
   def glFillPolygon(self, points, colorBorder = None , colorFill = None):
     if colorBorder == None:
       colorBorder = self.curr_color
@@ -244,11 +245,7 @@ class Renderer(object):
         elif polygonBuffer[x][y] == colorFill:
           self.glPoint(x+left, y+bottom, color=colorFill)
 
-  def glTriangle(self, A, B, C, color = None):
-    self.glLine(A, B, color=color)
-    self.glLine(B, C, color=color)
-    self.glLine(C, A, color=color)
-
+  def glTriangleStandard(self, A, B, C, color = None):
     if A.y < B.y:
       A, B = B, A
     if A.y < C.y:
@@ -257,28 +254,32 @@ class Renderer(object):
       B, C = C, B
 
     def flatBottom(v1, v2, v3):
-      d_v2_v1 = (v2.x - v1.x) / (v2.y - v1.y)
-      d_v3_v1 = (v3.x - v1.x) / (v3.y - v1.y)
-
-      x1 = v2.x
-      x2 = v3.x
-
-      for y in range(v2.y, v1.y + 1):
-        self.glLine(V2(int(x1), y), V2(int(x2), y), color=color)
-        x1 += d_v2_v1
-        x2 += d_v3_v1
+      try:
+        d_v2_v1 = (v2.x - v1.x) / (v2.y - v1.y)
+        d_v3_v1 = (v3.x - v1.x) / (v3.y - v1.y)
+      except:
+        pass
+      else:
+        x1 = v2.x
+        x2 = v3.x
+        for y in range(v2.y, v1.y + 1):
+          self.glLine(V2(int(x1), y), V2(int(x2), y), color=color)
+          x1 += d_v2_v1
+          x2 += d_v3_v1
 
     def flatTop(v1, v2, v3):
-      d_v3_v1 = (v3.x - v1.x) / (v3.y - v1.y)
-      d_v3_v2 = (v3.x - v2.x) / (v3.y - v2.y)
-
-      x1 = v3.x
-      x2 = v2.x
-
-      for y in range(v3.y, v1.y + 1):
-        self.glLine(V2(int(x1), y), V2(int(x2), y), color=color)
-        x1 += d_v3_v1
-        x2 += d_v3_v2
+      try:
+        d_v3_v1 = (v3.x - v1.x) / (v3.y - v1.y)
+        d_v3_v2 = (v3.x - v2.x) / (v3.y - v2.y)
+      except:
+        pass
+      else:
+        x1 = v3.x
+        x2 = v3.x
+        for y in range(v3.y, v1.y + 1):
+          self.glLine(V2(int(x1), y), V2(int(x2), y), color=color)
+          x1 += d_v3_v1
+          x2 += d_v3_v2
     
     if B.y == C.y:
       # flat bottom
@@ -286,12 +287,43 @@ class Renderer(object):
     elif A.y == B.y:
       # flat top
       flatTop(A, B, C)
+    elif C.y == A.y:
+      return # avoid division by zero
     else:
       # Divide triangle and draw two triangles
       # teorema de intercepto
       D = V2(A.x + ((B.y - A.y) / (C.y - A.y)) * (C.x - A.x), B.y)
       flatBottom(A, B, D)
       flatTop(B, D, C)
+
+  def glTriangleBarycentric(self, A, B, C, textCoords = (), texture = None, color = None, intensity = 1):
+    # Bounding box
+    minX = round(min(A.x, B.x, C.x))
+    minY = round(min(A.y, B.y, C.y))
+    maxX = round(max(A.x, B.x, C.x))
+    maxY = round(max(A.y, B.y, C.y))
+
+    for x in range(minX, maxX + 1):
+      for y in range(minY, maxY + 1):
+        u, v, w = barycentricCoords(A, B, C, V2(x, y))
+        if u >= 0 and v >= 0 and w >= 0:
+          z = A.z * u + B.z * v + C.z * w
+          if texture:
+            tA, tB, tC = textCoords
+            tx = tA[0] * u + tB[0] * v + tC[0] * w
+            ty = tA[1] * u + tB[1] * v + tC[1] * w
+            color = texture.getColor(tx, ty)
+            if 0 <= x < self.width and 0 <= y < self.height:
+              if z > self.zBuffer[x][y]:
+                self.glPoint(x, y, newColor(color[2] * intensity / 255,
+                                            color[1] * intensity / 255,
+                                            color[0] * intensity / 255))
+                self.zBuffer[x][y] = z
+          else:
+            if 0 <= x < self.width and 0 <= y < self.height:
+              if z > self.zBuffer[x][y]:
+                self.glPoint(x, y, newColor(intensity, intensity, intensity))
+                self.zBuffer[x][y] = z
 
   def glFinish(self, filename):
     # Creates a BMP file and fills it with the data inside self.pixels

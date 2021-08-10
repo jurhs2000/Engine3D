@@ -3,7 +3,8 @@
 # Julio Herrera 19402
 # Lab1: Filling any polygon
 
-from gl import Renderer, V2, color
+from glTypes import newColor
+from gl import Renderer
 
 width = 900
 height = 600
@@ -24,10 +25,10 @@ polygon4 = [(413, 177), (448, 159), (502, 88), (553, 53),
 polygon5 = [(682, 175), (708, 120), (735, 148), (739, 170)]
 
 # code here
-rend.glFillPolygon(polygon1, colorBorder=color(0.2, 0.1, 1), colorFill=color(1, 0.8, 0))
-rend.glFillPolygon(polygon2, colorBorder=color(1, 0.5, 0), colorFill=color(0.06, 0.09, 0.5))
-rend.glFillPolygon(polygon3, colorBorder=color(0.7, 0.02, 0.8), colorFill=color(0.05, 0.9, 0.7))
-rend.glFillPolygon(polygon4, colorBorder=color(1, 0, 1), colorFill=color(0.5, 0.5, 1))
-rend.glFillPolygon(polygon5, colorBorder=color(1, 0, 1), colorFill=color(0, 0, 0))
+rend.glFillPolygon(polygon1, colorBorder=newColor(0.2, 0.1, 1), colorFill=newColor(1, 0.8, 0))
+rend.glFillPolygon(polygon2, colorBorder=newColor(1, 0.5, 0), colorFill=newColor(0.06, 0.09, 0.5))
+rend.glFillPolygon(polygon3, colorBorder=newColor(0.7, 0.02, 0.8), colorFill=newColor(0.05, 0.9, 0.7))
+rend.glFillPolygon(polygon4, colorBorder=newColor(1, 0, 1), colorFill=newColor(0.5, 0.5, 1))
+rend.glFillPolygon(polygon5, colorBorder=newColor(1, 0, 1), colorFill=newColor(0, 0, 0))
 
 rend.glFinish("outputs/Lab1.bmp")

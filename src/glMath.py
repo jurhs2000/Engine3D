@@ -1,6 +1,5 @@
 from src.glTypes import V3, V4
-from math import sqrt, pow
-import numpy as np
+from math import pi, sin, cos, tan
 
 def barycentricCoords(A, B, C, P):
   try:
@@ -19,10 +18,9 @@ def barycentricCoords(A, B, C, P):
 def baseTransform(vertex, viewMatrix, viewportMatrix=None, projectionMatrix=None):
   augVertex = V4(vertex[0], vertex[1], vertex[2], 1)
   if viewportMatrix is None:
-    transVertex = np.matrix(viewMatrix) @ augVertex
+    transVertex = matrixMult_4_1(viewMatrix, augVertex)
   else:
-    transVertex = np.matrix(viewportMatrix) @ np.matrix(projectionMatrix) @ np.matrix(viewMatrix) @ augVertex
-  transVertex = transVertex.tolist()[0]
+    transVertex = matrixMult_4_1(matrixMult(viewportMatrix, projectionMatrix), matrixMult_4_1(viewMatrix, augVertex))
 
   transVertex = V3(transVertex[0] / transVertex[3],
                     transVertex[1] / transVertex[3],
@@ -37,7 +35,7 @@ def camTransform(vertex, viewportMatrix, projectionMatrix, viewMatrix):
   return baseTransform(vertex, viewMatrix, viewportMatrix, projectionMatrix)
 
 def norm(x):
-  xnorm = sqrt(pow(x.x, 2) + pow(x.y, 2) + pow(x.z, 2))
+  xnorm = ((x.x**2) + (x.y**2) + (x.z**2))**(1/2)
   return xnorm
 
 def divide(v3, d):
@@ -74,6 +72,15 @@ def matrixMult(matrixA, matrixB):
       product[i].append(element)
   return product
 
+def matrixMult_4_1(matrixA, matrixB):
+  mut = [None] * len(matrixA)
+  for i in range(len(matrixA)):
+    element = 0
+    for j in range(len(matrixA)):
+      element += matrixA[i][j] * matrixB[j]
+    mut[i] = element
+  return mut
+
 def createObjectMatrix(translate, scale, rotate):
   translateMatrix = [[1,0,0,translate.x],
                     [0,1,0,translate.y],
@@ -89,30 +96,33 @@ def createObjectMatrix(translate, scale, rotate):
 
   return matrixMult(matrixMult(translateMatrix, rotationMatrix), scaleMatrix)
 
+def deg2rad(deg):
+  return deg * (pi / 180)
+
 def createRotationMatrix(rotate):
-  pitch = np.deg2rad(rotate.x)
-  yaw = np.deg2rad(rotate.y)
-  roll = np.deg2rad(rotate.z)
+  pitch = deg2rad(rotate.x)
+  yaw = deg2rad(rotate.y)
+  roll = deg2rad(rotate.z)
 
   rotationX = [[1,0,0,0],
-              [0,np.cos(pitch),-np.sin(pitch),0],
-              [0,np.sin(pitch),np.cos(pitch),0],
+              [0,cos(pitch),-sin(pitch),0],
+              [0,sin(pitch),cos(pitch),0],
               [0,0,0,1]]
 
-  rotationY = [[np.cos(yaw),0,np.sin(yaw),0],
+  rotationY = [[cos(yaw),0,sin(yaw),0],
               [0,1,0,0],
-              [-np.sin(yaw),0,np.cos(yaw),0],
+              [-sin(yaw),0,cos(yaw),0],
               [0,0,0,1]]
 
-  rotationZ = [[np.cos(roll),-np.sin(roll),0,0],
-              [np.sin(roll),np.cos(roll),0,0],
+  rotationZ = [[cos(roll),-sin(roll),0,0],
+              [sin(roll),cos(roll),0,0],
               [0,0,1,0],
               [0,0,0,1]]
 
   return matrixMult(matrixMult(rotationX, rotationY), rotationZ)
 
 def top(fov, n):
-  return np.tan((fov * np.pi / 180) / 2) * n
+  return tan((fov * pi / 180) / 2) * n
 
 # determinant of matrix without numpy
 # inspired by https://stackoverflow.com/questions/32114054/matrix-inversion-without-numpy

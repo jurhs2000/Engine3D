@@ -64,39 +64,49 @@ def dot(x, y):
   xdy = (x.x * y.x) + (x.y * y.y) + (x.z * y.z)
   return xdy
 
-def createObjectMatrix(translate, scale, rotate):
-  translateMatrix = np.matrix([[1,0,0,translate.x],
-                                [0,1,0,translate.y],
-                                [0,0,1,translate.z],
-                                [0,0,0,1]])
+def matrixMult(matrixA, matrixB):
+  product = [ [] for x in range(len(matrixA)) ]
+  for i in range(len(matrixA)):
+    for j in range(len(matrixA)):
+      element = 0
+      for n in range(len(matrixA)):
+        element += matrixA[i][n] * matrixB[n][j]
+      product[i].append(element)
+  return product
 
-  scaleMatrix = np.matrix([[scale.x,0,0,0],
-                            [0,scale.y,0,0],
-                            [0,0,scale.z,0],
-                            [0,0,0,1]])
+def createObjectMatrix(translate, scale, rotate):
+  translateMatrix = [[1,0,0,translate.x],
+                    [0,1,0,translate.y],
+                    [0,0,1,translate.z],
+                    [0,0,0,1]]
+
+  scaleMatrix = [[scale.x,0,0,0],
+                [0,scale.y,0,0],
+                [0,0,scale.z,0],
+                [0,0,0,1]]
 
   rotationMatrix = createRotationMatrix(rotate)
 
-  return translateMatrix * rotationMatrix * scaleMatrix
+  return np.matrix(matrixMult(matrixMult(translateMatrix, rotationMatrix), scaleMatrix))
 
 def createRotationMatrix(rotate):
   pitch = np.deg2rad(rotate.x)
   yaw = np.deg2rad(rotate.y)
   roll = np.deg2rad(rotate.z)
 
-  rotationX = np.matrix([[1,0,0,0],
-                          [0,np.cos(pitch),-np.sin(pitch),0],
-                          [0,np.sin(pitch),np.cos(pitch),0],
-                          [0,0,0,1]])
+  rotationX = [[1,0,0,0],
+              [0,np.cos(pitch),-np.sin(pitch),0],
+              [0,np.sin(pitch),np.cos(pitch),0],
+              [0,0,0,1]]
 
-  rotationY = np.matrix([[np.cos(yaw),0,np.sin(yaw),0],
-                          [0,1,0,0],
-                          [-np.sin(yaw),0,np.cos(yaw),0],
-                          [0,0,0,1]])
+  rotationY = [[np.cos(yaw),0,np.sin(yaw),0],
+              [0,1,0,0],
+              [-np.sin(yaw),0,np.cos(yaw),0],
+              [0,0,0,1]]
 
-  rotationZ = np.matrix([[np.cos(roll),-np.sin(roll),0,0],
-                          [np.sin(roll),np.cos(roll),0,0],
-                          [0,0,1,0],
-                          [0,0,0,1]])
+  rotationZ = [[np.cos(roll),-np.sin(roll),0,0],
+              [np.sin(roll),np.cos(roll),0,0],
+              [0,0,1,0],
+              [0,0,0,1]]
 
-  return rotationX * rotationY * rotationZ
+  return matrixMult(matrixMult(rotationX, rotationY), rotationZ)

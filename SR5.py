@@ -21,6 +21,6 @@ rend.glLoadModel(
     translate=modelPosition,
     scale=V3(3,3,3),
     light=V3(0, 0, -1),
-    rotate=V3(0,0,0)
+    rotate=V3(10,50,10)
 )
 rend.glFinish("outputs/faceTransform.bmp")

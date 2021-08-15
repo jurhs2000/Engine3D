@@ -1,7 +1,7 @@
 # Graphics Library
 
 from src.glTypes import V2, V3, dword, newColor, word
-from src.glMath import barycentricCoords, divide, cross, dot, negative, norm, substract, transformV3
+from src.glMath import barycentricCoords, createObjectMatrix, divide, cross, dot, negative, norm, substract, transformV3
 from src.objLoader import Obj
 
 BLACK = newColor(0, 0, 0)
@@ -114,8 +114,10 @@ class Renderer(object):
 
     return buffer
 
-  def glLoadModel(self, filename, texture = None, translate = V3(0.0,0.0,0.0), scale = V3(1.0,1.0,1.0), light = V3(0.0,0.0,-1.0)):
+  def glLoadModel(self, filename, texture = None,
+  translate = V3(0.0,0.0,0.0), scale = V3(1.0,1.0,1.0), light = V3(0.0,0.0,-1.0), rotate = V3(0.0,0.0,0.0)):
     model = Obj(filename)
+    modelMatrix = createObjectMatrix(translate, scale, rotate)
 
     light = divide(light, norm(light))
 
@@ -128,7 +130,7 @@ class Renderer(object):
       for i in range(vertCount):
         vertices[i] = model.vertices[face[i][0]-1]
         textureV[i] = model.textcoords[face[i][1]-1] if texture else 0
-        triangleV[i] = transformV3(vertices[i], translate, scale)
+        triangleV[i] = transformV3(vertices[i], modelMatrix)
 
       normal = cross(substract(triangleV[1], triangleV[0]), substract(triangleV[2], triangleV[0]))
       if norm(normal) != 0:
@@ -137,10 +139,8 @@ class Renderer(object):
         normal = V3(0.5, 0.5, 0.5)
       intensity = dot(normal, negative(light))
       
-      if intensity > 1:
-        intensity = 1
-      elif intensity < 0:
-        intensity = 0
+      if intensity > 1: intensity = 1
+      elif intensity < 0: intensity = 0
 
       self.glTriangleBarycentric(triangleV[0],triangleV[1],triangleV[2],(textureV[0], textureV[1], textureV[2]),texture = texture,intensity = intensity)
       if vertCount == 4:

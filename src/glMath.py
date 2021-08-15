@@ -1,5 +1,6 @@
-from src.glTypes import V3
+from src.glTypes import V3, V4
 from math import sqrt, pow
+import numpy as np
 
 def barycentricCoords(A, B, C, P):
   try:
@@ -15,10 +16,19 @@ def barycentricCoords(A, B, C, P):
     return -1, -1, -1
   return u, v, w
 
-def transformV3(vertex, translate=V3(0,0,0), scale=V3(0,0,0)):
-  return V3(vertex[0] * scale.x + translate.x,
-            vertex[1] * scale.y + translate.y,
-            vertex[2] * scale.z + translate.z)
+def baseTransform(vertex, viewMatrix):
+  augVertex = V4(vertex[0], vertex[1], vertex[2], 1)
+  transVertex = viewMatrix @ augVertex
+  transVertex = transVertex.tolist()[0]
+
+  transVertex = V3(transVertex[0] / transVertex[3],
+                    transVertex[1] / transVertex[3],
+                    transVertex[2] / transVertex[3])
+
+  return transVertex
+
+def transformV3(vertex, vMatrix):
+  return baseTransform(vertex, vMatrix)
 
 def norm(x):
   xnorm = sqrt(pow(x.x, 2) + pow(x.y, 2) + pow(x.z, 2))
@@ -47,3 +57,40 @@ def negative(x):
 def dot(x, y):
   xdy = (x.x * y.x) + (x.y * y.y) + (x.z * y.z)
   return xdy
+
+def createObjectMatrix(translate, scale, rotate):
+  translateMatrix = np.matrix([[1,0,0,translate.x],
+                                [0,1,0,translate.y],
+                                [0,0,1,translate.z],
+                                [0,0,0,1]])
+
+  scaleMatrix = np.matrix([[scale.x,0,0,0],
+                            [0,scale.y,0,0],
+                            [0,0,scale.z,0],
+                            [0,0,0,1]])
+
+  rotationMatrix = createRotationMatrix(rotate)
+
+  return translateMatrix * rotationMatrix * scaleMatrix
+
+def createRotationMatrix(rotate):
+  pitch = np.deg2rad(rotate.x)
+  yaw = np.deg2rad(rotate.y)
+  roll = np.deg2rad(rotate.z)
+
+  rotationX = np.matrix([[1,0,0,0],
+                          [0,np.cos(pitch),-np.sin(pitch),0],
+                          [0,np.sin(pitch),np.cos(pitch),0],
+                          [0,0,0,1]])
+
+  rotationY = np.matrix([[np.cos(yaw),0,np.sin(yaw),0],
+                          [0,1,0,0],
+                          [-np.sin(yaw),0,np.cos(yaw),0],
+                          [0,0,0,1]])
+
+  rotationZ = np.matrix([[np.cos(roll),-np.sin(roll),0,0],
+                          [np.sin(roll),np.cos(roll),0,0],
+                          [0,0,1,0],
+                          [0,0,0,1]])
+
+  return rotationX * rotationY * rotationZ

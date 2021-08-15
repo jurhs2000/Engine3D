@@ -16,9 +16,12 @@ def barycentricCoords(A, B, C, P):
     return -1, -1, -1
   return u, v, w
 
-def baseTransform(vertex, viewMatrix):
+def baseTransform(vertex, viewMatrix, viewportMatrix=None, projectionMatrix=None):
   augVertex = V4(vertex[0], vertex[1], vertex[2], 1)
-  transVertex = viewMatrix @ augVertex
+  if viewportMatrix is None:
+    transVertex = viewMatrix @ augVertex
+  else:
+    transVertex = viewportMatrix @ projectionMatrix @ viewMatrix @ augVertex
   transVertex = transVertex.tolist()[0]
 
   transVertex = V3(transVertex[0] / transVertex[3],
@@ -29,6 +32,9 @@ def baseTransform(vertex, viewMatrix):
 
 def transformV3(vertex, vMatrix):
   return baseTransform(vertex, vMatrix)
+
+def camTransform(vertex, viewportMatrix, projectionMatrix, viewMatrix):
+  return baseTransform(vertex, viewMatrix, viewportMatrix, projectionMatrix)
 
 def norm(x):
   xnorm = sqrt(pow(x.x, 2) + pow(x.y, 2) + pow(x.z, 2))

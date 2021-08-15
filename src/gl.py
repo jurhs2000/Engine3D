@@ -1,8 +1,9 @@
 # Graphics Library
 
-from src.glTypes import V2, V3, dword, newColor, word
-from src.glMath import barycentricCoords, createObjectMatrix, divide, cross, dot, negative, norm, substract, transformV3
+from src.glTypes import V2, V3, V4, dword, newColor, word
+from src.glMath import barycentricCoords, camTransform, createObjectMatrix, divide, cross, dot, negative, norm, substract, transformV3
 from src.objLoader import Obj
+import numpy as np
 
 BLACK = newColor(0, 0, 0)
 WHITE = newColor(1, 1, 1)
@@ -12,6 +13,7 @@ class Renderer(object):
   def __init__(self, width, height):
     self.curr_color = WHITE
     self.clear_color = BLACK
+    self.glViewMatrix()
     self.glCreateWindow(width, height)
 
   def glCreateWindow(self, width, height):
@@ -28,6 +30,13 @@ class Renderer(object):
     self.vpWidthMax = self.vpX + self.vpWidth
     self.vpHeightMax = self.vpY + self.vpHeight
 
+    self.viewportMatrix = np.matrix([[width/2, 0, 0, x + width/2],
+                                      [0, height/2, 0, y + height/2],
+                                      [0, 0, 0.5, 0.5],
+                                      [0, 0, 0, 1]])
+
+    self.glProjectionMatrix()
+
   def glViewPortClear(self, color = None):
     for x in range(self.vpX, self.vpX + self.vpWidth):
       for y in range(self.vpY, self.vpY + self.vpHeight):
@@ -40,10 +49,40 @@ class Renderer(object):
     # Creates a 2D pixels list and assigns a 3 bytes color for each value
     self.pixels = [ [self.clear_color for y in range(self.height)] for x in range(self.width) ]
     
-    self.zBuffer = [ [ -float('inf') for y in range(self.height) ] for x in range(self.width) ]
+    self.zBuffer = [ [ float('inf') for y in range(self.height) ] for x in range(self.width) ]
 
   def glColor(self, r, g, b):
     self.curr_color = newColor(r, g, b)
+
+  def glViewMatrix(self, translate=V3(0,0,0), rotate=V3(0,0,0)):
+    camMatrix = createObjectMatrix(translate,V3(1,1,1),rotate)
+    self.viewMatrix = np.linalg.inv(camMatrix)
+
+  def glLookAt(self, eye, camPosition = V3(0,0,0)):
+    forward = np.subtract(camPosition, eye)
+    forward = forward / np.linalg.norm(forward)
+
+    right = np.cross(V3(0,1,0), forward)
+    right = right / np.linalg.norm(right)
+
+    up = np.cross(forward, right)
+    up = up / np.linalg.norm(up)
+
+    camMatrix = np.matrix([[right[0],up[0],forward[0],camPosition.x],
+                            [right[1],up[1],forward[1],camPosition.y],
+                            [right[2],up[2],forward[2],camPosition.z],
+                            [0,0,0,1]])
+
+    self.viewMatrix = np.linalg.inv(camMatrix)
+
+  def glProjectionMatrix(self, n = 0.1, f = 1000, fov = 60 ):
+    t = np.tan((fov * np.pi / 180) / 2) * n
+    r = t * self.vpWidth / self.vpHeight
+
+    self.projectionMatrix = np.matrix([[n/r, 0, 0, 0],
+                                        [0, n/t, 0, 0],
+                                        [0, 0, -(f+n)/(f-n), -(2*f*n)/(f-n)],
+                                        [0, 0, -1, 0]])
 
   def glVertex(self, x, y, color = None):
     if x < -1 or x > 1:
@@ -115,13 +154,16 @@ class Renderer(object):
     return buffer
 
   def glLoadModel(self, filename, texture = None,
-  translate = V3(0.0,0.0,0.0), scale = V3(1.0,1.0,1.0), light = V3(0.0,0.0,-1.0), rotate = V3(0.0,0.0,0.0)):
+  translate = V3(0,0,0), scale = V3(1,1,1), light = V3(0,0,-1), rotate = V3(0,0,0)):
     model = Obj(filename)
     modelMatrix = createObjectMatrix(translate, scale, rotate)
 
     light = divide(light, norm(light))
 
+    total = len(model.faces)
+    count = 0
     for face in model.faces:
+      print(f'face {count}/{total}')
       vertCount = len(face)
       vertices = [None] * vertCount
       textureV = [None] * vertCount
@@ -142,9 +184,19 @@ class Renderer(object):
       if intensity > 1: intensity = 1
       elif intensity < 0: intensity = 0
 
+      count2 = 0
+      for i in range(vertCount):
+        print(f'camTransform {count2}/{vertCount}')
+        triangleV[i] = camTransform(triangleV[i], self.viewportMatrix, self.projectionMatrix, self.viewMatrix)
+        print('camTransform finish')
+        count2 += 1
+
+      print('start triangle bary')
       self.glTriangleBarycentric(triangleV[0],triangleV[1],triangleV[2],(textureV[0], textureV[1], textureV[2]),texture = texture,intensity = intensity)
       if vertCount == 4:
         self.glTriangleBarycentric(triangleV[0],triangleV[2],triangleV[3],(textureV[0], textureV[2], textureV[3]),texture = texture,intensity = intensity)
+      count += 1
+      print('finish triangle bary')
 
   def glLineInterceptor(self, buffer, width, height, left, bottom, points, colorFill, colorInterceptor):
     fill = False
@@ -313,14 +365,14 @@ class Renderer(object):
             ty = tA[1] * u + tB[1] * v + tC[1] * w
             color = texture.getColor(tx, ty)
             if 0 <= x < self.width and 0 <= y < self.height:
-              if z > self.zBuffer[x][y]:
+              if z < self.zBuffer[x][y] and z <= 1 and z >= -1:
                 self.glPoint(x, y, newColor(color[2] * intensity / 255,
                                             color[1] * intensity / 255,
                                             color[0] * intensity / 255))
                 self.zBuffer[x][y] = z
           else:
             if 0 <= x < self.width and 0 <= y < self.height:
-              if z > self.zBuffer[x][y]:
+              if z < self.zBuffer[x][y] and z <= 1 and z >= -1:
                 self.glPoint(x, y, newColor(intensity, intensity, intensity))
                 self.zBuffer[x][y] = z
 

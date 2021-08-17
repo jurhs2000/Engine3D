@@ -44,14 +44,6 @@ rend.glLoadModel(
     light=V3(0, 0, -1),
     rotate=V3(40,-10,0)
 )
-# Renders buckethead takes about 5 minutes
-rend.glLoadModel(
-    "models/buckethead/buckethead2.obj",
-    translate=V3(0, 0, -5),
-    scale=V3(0.5,0.5,-0.5),
-    light=V3(0, 0, 1),
-    rotate=V3(0,0,0)
-)
 rend.glFinish("outputs/highAngle.bmp")
 
 # LOW ANGLE

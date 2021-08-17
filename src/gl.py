@@ -15,6 +15,10 @@ class Renderer(object):
     self.glViewMatrix()
     self.glCreateWindow(width, height)
 
+    self.active_texture = None
+    self.active_shader = None
+    self.directional_light = V3(0,0,1)
+
   def glCreateWindow(self, width, height):
     self.width = width
     self.height = height
@@ -55,6 +59,8 @@ class Renderer(object):
 
   def glViewMatrix(self, translate=V3(0,0,0), rotate=V3(0,0,0)):
     camMatrix = createObjectMatrix(translate,V3(1,1,1),rotate)
+    print(camMatrix)
+    print(inv(camMatrix))
     self.viewMatrix = inv(camMatrix)
 
   def glLookAt(self, eye, camPosition = V3(0,0,0)):

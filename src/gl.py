@@ -12,7 +12,7 @@ class Renderer(object):
   def __init__(self, width, height):
     self.curr_color = WHITE
     self.clear_color = BLACK
-    self.glViewMatrix()
+    self.glLookAt(V3(0,0,0), V3(0,0,-10))
     self.glCreateWindow(width, height)
 
     self.active_texture = None
@@ -57,17 +57,11 @@ class Renderer(object):
   def glColor(self, r, g, b):
     self.curr_color = newColor(r, g, b)
 
-  def glViewMatrix(self, translate=V3(0,0,0), rotate=V3(0,0,0)):
-    camMatrix = createObjectMatrix(translate,V3(1,1,1),rotate)
-    print(camMatrix)
-    print(inv(camMatrix))
-    self.viewMatrix = inv(camMatrix)
-
-  def glLookAt(self, eye, camPosition = V3(0,0,0)):
+  def glLookAt(self, eye, camPosition = V3(0,0,0), worldUp=V3(0,1,0)):
     forward = substract(camPosition, eye)
     forward = divide(forward, norm(forward))
 
-    right = cross(V3(0,1,0), forward)
+    right = cross(worldUp, forward)
     right = divide(right, norm(right))
 
     up = cross(forward, right)

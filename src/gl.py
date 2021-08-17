@@ -1,7 +1,7 @@
 # Graphics Library
 
 from src.glTypes import V2, V3, V4, dword, newColor, word
-from src.glMath import barycentricCoords, camTransform, createObjectMatrix, divide, cross, dot, inv, negative, norm, substract, top, transformV3
+from src.glMath import barycentricCoords, camTransform, createObjectMatrix, createRotationMatrix, dirTransform, divide, cross, dot, inv, negative, norm, substract, top, transformV3
 from src.objLoader import Obj
 
 BLACK = newColor(0, 0, 0)
@@ -17,7 +17,7 @@ class Renderer(object):
 
     self.active_texture = None
     self.active_shader = None
-    self.directional_light = V3(0,0,1)
+    self.directional_light = V3(0,0,-1)
 
   def glCreateWindow(self, width, height):
     self.width = width
@@ -158,10 +158,11 @@ class Renderer(object):
 
     return buffer
 
-  def glLoadModel(self, filename, texture = None,
+  def glLoadModel(self, filename,
   translate = V3(0,0,0), scale = V3(1,1,1), light = V3(0,0,-1), rotate = V3(0,0,0)):
     model = Obj(filename)
     modelMatrix = createObjectMatrix(translate, scale, rotate)
+    rotationMatrix = createRotationMatrix(rotate)
 
     light = divide(light, norm(light))
 
@@ -173,28 +174,30 @@ class Renderer(object):
       vertices = [None] * vertCount
       textureV = [None] * vertCount
       triangleV = [None] * vertCount
+      normals = [None] * vertCount
 
       for i in range(vertCount):
         vertices[i] = model.vertices[face[i][0]-1]
-        textureV[i] = model.textcoords[face[i][1]-1] if texture else 0
+        textureV[i] = model.textcoords[face[i][1]-1] if self.active_texture else 0
         triangleV[i] = transformV3(vertices[i], modelMatrix)
+        normals[i] = dirTransform(model.normals[face[i][2]-1], rotationMatrix)
 
-      normal = cross(substract(triangleV[1], triangleV[0]), substract(triangleV[2], triangleV[0]))
-      if norm(normal) != 0:
-        normal = divide(normal, norm(normal))
-      else:
-        normal = V3(0.5, 0.5, 0.5)
-      intensity = dot(normal, negative(light))
+      # normal = cross(substract(triangleV[1], triangleV[0]), substract(triangleV[2], triangleV[0]))
+      # if norm(normal) != 0:
+      #   normal = divide(normal, norm(normal))
+      # else:
+      #   normal = V3(0.5, 0.5, 0.5)
+      # intensity = dot(normal, negative(light))
       
-      if intensity > 1: intensity = 1
-      elif intensity < 0: intensity = 0
+      # if intensity > 1: intensity = 1
+      # elif intensity < 0: intensity = 0
 
       for i in range(vertCount):
         triangleV[i] = camTransform(triangleV[i], self.viewportMatrix, self.projectionMatrix, self.viewMatrix)
 
-      self.glTriangleBarycentric(triangleV[0],triangleV[1],triangleV[2],(textureV[0], textureV[1], textureV[2]),texture = texture,intensity = intensity)
+      self.glTriangleBarycentric(triangleV[0],triangleV[1],triangleV[2],(textureV[0], textureV[1], textureV[2]),verts=(triangleV[0],triangleV[1],triangleV[2]), normals=(normals[0],normals[1],normals[2]))
       if vertCount == 4:
-        self.glTriangleBarycentric(triangleV[0],triangleV[2],triangleV[3],(textureV[0], textureV[2], textureV[3]),texture = texture,intensity = intensity)
+        self.glTriangleBarycentric(triangleV[0],triangleV[2],triangleV[3],(textureV[0], textureV[2], textureV[3]),verts=(triangleV[0],triangleV[2],triangleV[3]), normals=(normals[0],normals[2],normals[3]))
       count += 1
 
   def glLineInterceptor(self, buffer, width, height, left, bottom, points, colorFill, colorInterceptor):
@@ -346,7 +349,7 @@ class Renderer(object):
       flatBottom(A, B, D)
       flatTop(B, D, C)
 
-  def glTriangleBarycentric(self, A, B, C, textCoords = (), texture = None, color = None, intensity = 1):
+  def glTriangleBarycentric(self, A, B, C, textCoords = (), verts = (), normals = (), color = None):
     # Bounding box
     minX = round(min(A.x, B.x, C.x))
     minY = round(min(A.y, B.y, C.y))
@@ -358,22 +361,36 @@ class Renderer(object):
         u, v, w = barycentricCoords(A, B, C, V2(x, y))
         if u >= 0 and v >= 0 and w >= 0:
           z = A.z * u + B.z * v + C.z * w
-          if texture:
-            tA, tB, tC = textCoords
-            tx = tA[0] * u + tB[0] * v + tC[0] * w
-            ty = tA[1] * u + tB[1] * v + tC[1] * w
-            color = texture.getColor(tx, ty)
-            if 0 <= x < self.width and 0 <= y < self.height:
-              if z < self.zBuffer[x][y] and z <= 1 and z >= -1:
-                self.glPoint(x, y, newColor(color[2] * intensity / 255,
-                                            color[1] * intensity / 255,
-                                            color[0] * intensity / 255))
-                self.zBuffer[x][y] = z
-          else:
-            if 0 <= x < self.width and 0 <= y < self.height:
-              if z < self.zBuffer[x][y] and z <= 1 and z >= -1:
-                self.glPoint(x, y, newColor(intensity, intensity, intensity))
-                self.zBuffer[x][y] = z
+          # if self.active_texture:
+          #   tA, tB, tC = textCoords
+          #   tx = tA[0] * u + tB[0] * v + tC[0] * w
+          #   ty = tA[1] * u + tB[1] * v + tC[1] * w
+          #   color = self.active_texture.getColor(tx, ty)
+          if 0 <= x < self.width and 0 <= y < self.height:
+            if z < self.zBuffer[x][y] and z <= 1 and z >= -1:
+              if self.active_shader:
+                r, g, b = self.active_shader(self,
+                                            verts=verts,
+                                            baryCoords=(u,v,w),
+                                            textCoords=textCoords,
+                                            normals=normals,
+                                            color = color or self.curr_color)
+              else:
+                b, g, r = color = self.curr_color
+                b = b/255
+                g = g/255
+                r = r/255
+
+              # self.glPoint(x, y, newColor(color[2] * intensity / 255,
+              #                             color[1] * intensity / 255,
+              #                             color[0] * intensity / 255))
+              self.glPoint(x, y, newColor(r, g, b))
+              self.zBuffer[x][y] = z
+          # else:
+          #   if 0 <= x < self.width and 0 <= y < self.height:
+          #     if z < self.zBuffer[x][y] and z <= 1 and z >= -1:
+          #       self.glPoint(x, y, newColor(intensity, intensity, intensity))
+          #       self.zBuffer[x][y] = z
 
   def glFinish(self, filename):
     # Creates a BMP file and fills it with the data inside self.pixels

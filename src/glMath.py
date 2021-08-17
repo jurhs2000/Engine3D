@@ -34,6 +34,16 @@ def transformV3(vertex, vMatrix):
 def camTransform(vertex, viewportMatrix, projectionMatrix, viewMatrix):
   return baseTransform(vertex, viewMatrix, viewportMatrix, projectionMatrix)
 
+def dirTransform(dirVertex, vMatrix):
+  augVertex = V4(dirVertex[0], dirVertex[1], dirVertex[2], 0)
+  transVertex = matrixMult_4_1(vMatrix, augVertex)
+
+  transVertex = V3(transVertex[0] / transVertex[3],
+                    transVertex[1] / transVertex[3],
+                    transVertex[2] / transVertex[3])
+
+  return transVertex
+
 def norm(x):
   xnorm = ((x.x**2) + (x.y**2) + (x.z**2))**(1/2)
   return xnorm

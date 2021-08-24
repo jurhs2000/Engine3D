@@ -1,3 +1,4 @@
+from src.glTypes import V3
 from src.glMath import cross, divide, dot, negative, norm, substract
 
 def flat(render, **kwargs):
@@ -5,23 +6,21 @@ def flat(render, **kwargs):
   tA, tB, tC = kwargs['textureCoords']
   A, B, C = kwargs['vertices']
   b, g, r = kwargs['color']
+  triangleNormal = kwargs['triangleNormal']
 
-  r = 1
-  g = 1
-  b = 1
+  b/=255
+  g/=255
+  r/=255
 
   if render.active_texture:
     tx = tA[0] * u + tB[0] * v + tC[0] * w
     ty = tA[1] * u + tB[1] * v + tC[1] * w
-    textureColor = render.active_texture.get_color(tx, ty)
-
+    textureColor = render.active_texture.getColor(tx, ty)
     b *= textureColor[0] / 255
     g *= textureColor[1] / 255
     r *= textureColor[2] / 255
 
-  normal = cross(substract(B,A), substract(C,A))
-  normal = divide(normal, norm(normal))
-  intensity = dot(normal, negative(render.direcional_light))
+  intensity = dot(triangleNormal, negative(render.directional_light))
 
   b *= intensity
   g *= intensity
@@ -31,9 +30,7 @@ def flat(render, **kwargs):
   else: return 0, 0, 0
 
 def gourad(render, **kwargs):
-  A, B, C = kwargs['vertices']
   u, v, w = kwargs['baryCoords']
-  tA, tB, tC = kwargs['textureCoords']
   b, g, r = kwargs['color']
   nA, nB, nC = kwargs['normals']
 
@@ -41,14 +38,175 @@ def gourad(render, **kwargs):
   g /= 255
   r /= 255
 
-  dirLight = [0,0,0]
-  dirLight[0] = -render.direcional_light[0]
-  dirLight[1] = -render.direcional_light[1]
-  dirLight[2] = -render.direcional_light[2]
-  intensityA = dot(nA, dirLight)
-  intensityB = dot(nB, dirLight)
-  intensityC = dot(nC, dirLight)
+  intensityA = dot(nA, negative(render.directional_light))
+  intensityB = dot(nB, negative(render.directional_light))
+  intensityC = dot(nC, negative(render.directional_light))
 
   intensity = intensityA*u + intensityB*v + intensityC*w
+  b *= intensity
+  g *= intensity
+  r *= intensity
+
+  if intensity > 0:
+    return r, g, b
+  else:
+    return 0, 0, 0
+
+def phong(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  b, g, r = kwargs['color']
+  tA, tB, tC = kwargs['textureCoords']
+  nA, nB, nC = kwargs['normals']
+
+  b /= 255
+  g /= 255
+  r /= 255
+
+  if render.active_texture:
+    tx = tA[0] * u + tB[0] * v + tC[0] * w
+    ty = tA[1] * u + tB[1] * v + tC[1] * w
+    textureColor = render.active_texture.getColor(tx, ty)
+    b *= textureColor[0] / 255
+    g *= textureColor[1] / 255
+    r *= textureColor[2] / 255
+
+  nX = nA[0] * u + nB[0] * v + nC[0] * w
+  nY = nA[1] * u + nB[1] * v + nC[1] * w
+  nZ = nA[2] * u + nB[2] * v + nC[2] * w
+
+  normal = V3(nX, nY, nZ)
+  intensity = dot(normal, negative(render.directional_light))
+
+  b *= intensity
+  g *= intensity
+  r *= intensity
+
+  if intensity > 0:
+    return r, g, b
+  else:
+    return 0, 0, 0
+
+def unlit(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  b, g, r = kwargs['color']
+  tA, tB, tC = kwargs['textureCoords']
+
+  b /= 255
+  g /= 255
+  r /= 255
+
+  if render.active_texture:
+    tx = tA[0] * u + tB[0] * v + tC[0] * w
+    ty = tA[1] * u + tB[1] * v + tC[1] * w
+    textureColor = render.active_texture.getColor(tx, ty)
+    b *= textureColor[0] / 255
+    g *= textureColor[1] / 255
+    r *= textureColor[2] / 255
+
+  return r, g, b
+
+def toon(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  b, g, r = kwargs['color']
+  tA, tB, tC = kwargs['textureCoords']
+  nA, nB, nC = kwargs['normals']
+
+  b /= 255
+  g /= 255
+  r /= 255
+
+  if render.active_texture:
+    tx = tA[0] * u + tB[0] * v + tC[0] * w
+    ty = tA[1] * u + tB[1] * v + tC[1] * w
+    textureColor = render.active_texture.getColor(tx, ty)
+    b *= textureColor[0] / 255
+    g *= textureColor[1] / 255
+    r *= textureColor[2] / 255
+
+  nX = nA[0] * u + nB[0] * v + nC[0] * w
+  nY = nA[1] * u + nB[1] * v + nC[1] * w
+  nZ = nA[2] * u + nB[2] * v + nC[2] * w
+
+  normal = V3(nX, nY, nZ)
+  intensity = dot(normal, negative(render.directional_light))
+
+  if intensity > 0.8:
+    intensity = 1
+  elif intensity > 0.4:
+    intensity = 0.75
+  elif intensity > 0.1:
+    intensity = 0.4
+  else:
+    intensity = 0
+
+  b *= intensity
+  g *= intensity
+  r *= intensity
+
+  if intensity > 0:
+    return r, g, b
+  else:
+    return 0, 0, 0
+
+def coolShader(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  nA, nB, nC = kwargs['normals']
+
+  nX = nA[0] * u + nB[0] * v + nC[0] * w
+  nY = nA[1] * u + nB[1] * v + nC[1] * w
+  nZ = nA[2] * u + nB[2] * v + nC[2] * w
+
+  normal = V3(nX, nY, nZ)
+  intensity = dot(normal, negative(render.directional_light))
+
+  r, g, b = (0,0,0)
+
+  if intensity > 0.7:
+    r = 1
+  elif intensity > 0.3:
+    r = 0.5
+    b = 0.5
+  else:
+    b = 1
+
+  return r, g, b
+
+def textureBlend(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  b, g, r = kwargs['color']
+  tA, tB, tC = kwargs['textureCoords']
+  nA, nB, nC = kwargs['normals']
+
+  b /= 255
+  g /= 255
+  r /= 255
+
+  if render.active_texture:
+    tx = tA[0] * u + tB[0] * v + tC[0] * w
+    ty = tA[1] * u + tB[1] * v + tC[1] * w
+    textureColor = render.active_texture.getColor(tx, ty)
+    b *= textureColor[0] / 255
+    g *= textureColor[1] / 255
+    r *= textureColor[2] / 255
+
+  nX = nA[0] * u + nB[0] * v + nC[0] * w
+  nY = nA[1] * u + nB[1] * v + nC[1] * w
+  nZ = nA[2] * u + nB[2] * v + nC[2] * w
+
+  normal = V3(nX, nY, nZ)
+  intensity = dot(normal, negative(render.directional_light))
+
+  if intensity < 0:
+    intensity = 0
+
+  b *= intensity
+  g *= intensity
+  r *= intensity
+
+  if render.active_texture2:
+    textureColor = render.active_texture2.getColor(tx, ty)
+    b += (textureColor[0] / 255) * (1 - intensity)
+    g += (textureColor[1] / 255) * (1 - intensity)
+    r += (textureColor[2] / 255) * (1 - intensity)
 
   return r, g, b

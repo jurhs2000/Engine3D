@@ -18,7 +18,10 @@ class Obj(object):
   def read(self):
     for line in self.lines:
       if line:
-        prefix, value = line.split(" ", 1)
+        try:
+          prefix, value = line.split(" ", 1)
+        except:
+          continue
         if prefix == "v": # Vertex
           self.vertices.append(list(map(float, value.split(" "))))
         elif prefix == "vt": # Text coordinate
@@ -43,20 +46,20 @@ class TextureBMP(object):
       self.height = struct.unpack("=l", image.read(4))[0]
 
       image.seek(headerSize)
-      
+
       self.pixels = []
-      for x in range(self.width):
+      for y in range(self.height):
         self.pixels.append([])
-        for y in range(self.height):
+        for x in range(self.width):
           b = ord(image.read(1)) / 255
           g = ord(image.read(1)) / 255
           r = ord(image.read(1)) / 255
-          self.pixels[x].append(newColor(r,g,b))
+          self.pixels[y].append(newColor(r,g,b))
         
   def getColor(self, tx, ty):
     if 0 <= tx < 1 and 0 <= ty < 1:
-      x = round(tx * self.width)
-      y = round(ty * self.height)
+      x = int(tx * self.width)
+      y = int(ty * self.height)
       return self.pixels[y][x]
     else:
       return newColor(0,0,0)

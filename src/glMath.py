@@ -38,9 +38,9 @@ def dirTransform(dirVertex, vMatrix):
   augVertex = V4(dirVertex[0], dirVertex[1], dirVertex[2], 0)
   transVertex = matrixMult_4_1(vMatrix, augVertex)
 
-  transVertex = V3(transVertex[0] / transVertex[3],
-                    transVertex[1] / transVertex[3],
-                    transVertex[2] / transVertex[3])
+  transVertex = V3(transVertex[0],
+                    transVertex[1],
+                    transVertex[2])
 
   return transVertex
 

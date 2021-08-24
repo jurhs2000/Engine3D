@@ -1,5 +1,5 @@
-from src.glTypes import V3
-from src.glMath import cross, divide, dot, negative, norm, substract
+from src.glTypes import V3, newColor
+from src.glMath import angle, cross, divide, dot, negative, norm, substract
 
 def flat(render, **kwargs):
   u, v, w = kwargs['baryCoords']
@@ -130,14 +130,14 @@ def toon(render, **kwargs):
   normal = V3(nX, nY, nZ)
   intensity = dot(normal, negative(render.directional_light))
 
-  if intensity > 0.8:
+  if intensity > 0.9:
     intensity = 1
-  elif intensity > 0.4:
-    intensity = 0.75
-  elif intensity > 0.1:
+  elif intensity > 0.6:
+    intensity = 0.6
+  elif intensity > 0.2:
     intensity = 0.4
   else:
-    intensity = 0
+    intensity = 0.2
 
   b *= intensity
   g *= intensity
@@ -210,3 +210,34 @@ def textureBlend(render, **kwargs):
     r += (textureColor[2] / 255) * (1 - intensity)
 
   return r, g, b
+
+def gradient(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  b, g, r = kwargs['color']
+  nA, nB, nC = kwargs['normals']
+  A, B, C = kwargs['vertices']
+  upColor = kwargs['upColor']
+  downColor = kwargs['downColor']
+
+  y = A[1] * u + B[1] * v + C[1] * w
+  height = render.maxY - render.minY
+  b = (((y+abs(render.minY)) / height) * (upColor[0] - downColor[0]) + downColor[0]) / 255
+  g = (((y+abs(render.minY)) / height) * (upColor[1] - downColor[1]) + downColor[1]) / 255
+  r = (((y+abs(render.minY)) / height) * (upColor[2] - downColor[2]) + downColor[2]) / 255
+
+  nX = nA[0] * u + nB[0] * v + nC[0] * w
+  nY = nA[1] * u + nB[1] * v + nC[1] * w
+  nZ = nA[2] * u + nB[2] * v + nC[2] * w
+
+  normal = V3(nX, nY, nZ)
+  intensity = dot(normal, negative(render.directional_light))
+
+  b = b*intensity if b*intensity <=1 else 1
+  g = g*intensity if g*intensity <=1 else 1
+  r = r*intensity if r*intensity <=1 else 1
+
+  if intensity > 0:
+    return r, g, b
+  else:
+    return 0, 0, 0
+

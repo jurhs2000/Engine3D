@@ -159,6 +159,9 @@ class Renderer(object):
     modelMatrix = createObjectMatrix(translate, scale, rotate)
     rotationMatrix = createRotationMatrix(rotate)
 
+    verticesY = [ x[1] for x in model.vertices ]
+    self.minY = min(verticesY)
+    self.maxY = max(verticesY)
     total = len(model.faces)
     count = 0
     for face in model.faces:
@@ -376,11 +379,6 @@ class Renderer(object):
 
               self.glPoint(x, y, newColor(r, g, b))
               self.zBuffer[x][y] = z
-          # else:
-          #   if 0 <= x < self.width and 0 <= y < self.height:
-          #     if z < self.zBuffer[x][y] and z <= 1 and z >= -1:
-          #       self.glPoint(x, y, newColor(intensity, intensity, intensity))
-          #       self.zBuffer[x][y] = z
 
   def glFinish(self, filename):
     # Creates a BMP file and fills it with the data inside self.pixels

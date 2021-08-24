@@ -1,5 +1,5 @@
 from src.glTypes import V3, V4
-from math import pi, sin, cos, tan
+from math import acos, pi, sin, cos, tan
 
 def barycentricCoords(A, B, C, P):
   try:
@@ -169,3 +169,10 @@ def transpose(x):
     for j in range(len(x)):
       xt[i][j] = x[j][i]
   return xt
+
+# get the angle between two V3 vectors
+def angle(v1, v2):
+  resultDot = dot(v1, v2)
+  v1_len = len(v1)
+  v2_len = len(v2)
+  return acos(resultDot / (v1_len * v2_len))

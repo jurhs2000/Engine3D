@@ -17,6 +17,7 @@ class Renderer(object):
 
     self.active_texture = None
     self.active_texture_2 = None
+    self.normal_map = None
     self.active_shader = None
     self.directional_light = V3(0,0,-1)
 

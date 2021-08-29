@@ -1,7 +1,7 @@
 from math import cos, inf
 from random import uniform, random
 from src.glTypes import V3, newColor
-from src.glMath import angle, cross, divide, dot, negative, norm, substract
+from src.glMath import angle, cross, divide, dot, matrixMult, matrixMult_4_1, mult, negative, norm, substract
 
 def flat(render, **kwargs):
   u, v, w = kwargs['baryCoords']
@@ -488,6 +488,68 @@ def accentuate(render, **kwargs):
   b = color[0]/255 if color[0]/255 > b else b
   g = color[1]/255 if color[1]/255 > g else g
   r = color[2]/255 if color[2]/255 > r else r
+
+  b = b*intensity if b*intensity <=1 else 1
+  g = g*intensity if g*intensity <=1 else 1
+  r = r*intensity if r*intensity <=1 else 1
+
+  if intensity > 0:
+    return r, g, b
+  else:
+    return 0, 0, 0
+
+def normalMap(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  b, g, r = kwargs['color']
+  A, B, C = kwargs['vertices']
+  tA, tB, tC = kwargs['textureCoords']
+  nA, nB, nC = kwargs['normals']
+
+  b /= 255
+  g /= 255
+  r /= 255
+
+  if render.active_texture:
+    tx = tA[0] * u + tB[0] * v + tC[0] * w
+    ty = tA[1] * u + tB[1] * v + tC[1] * w
+    textureColor = render.active_texture.getColor(tx, ty)
+    b *= textureColor[0] / 255
+    g *= textureColor[1] / 255
+    r *= textureColor[2] / 255
+
+  nX = nA[0] * u + nB[0] * v + nC[0] * w
+  nY = nA[1] * u + nB[1] * v + nC[1] * w
+  nZ = nA[2] * u + nB[2] * v + nC[2] * w
+
+  normal = V3(nX, nY, nZ)
+
+  if render.normal_map:
+    textureNormal = render.normal_map.getColor(tx, ty)
+    textureNormal = V3((textureNormal[2] / 255) * 2 - 1,
+                      (textureNormal[1] / 255) * 2 - 1,
+                      (textureNormal[0] / 255) * 2 - 1)
+    textureNormal = divide(textureNormal, norm(textureNormal))
+    edge1 = substract(B,A)
+    edge2 = substract(C,A)
+    deltaUV1 = substract(V3(tB[0], tB[1], tB[2]), V3(tA[0], tA[1], tA[2]))
+    deltaUV2 = substract(V3(tC[0], tC[1], tC[2]), V3(tA[0], tA[1], tA[2]))
+    f = 1 / (deltaUV1[0] * deltaUV2[1] - deltaUV2[0] * deltaUV1[1])
+    tangent = [f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0]),
+               f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1]),
+               f * (deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2])]
+    tangent = divide(V3(tangent[0], tangent[1], tangent[2]), norm(V3(tangent[0], tangent[1], tangent[2])))
+    tangent = substract(tangent, mult(normal, dot(tangent, normal)))
+    tangent = divide(tangent, norm(tangent))
+    bitangent = cross(normal, tangent)
+    bitangent = divide(bitangent, norm(bitangent))
+    tangentMatrix = [[tangent[0], bitangent[0], normal[0]],
+                    [tangent[1], bitangent[1], normal[1]],
+                    [tangent[2], bitangent[2], normal[2]]]
+    textureNormal = matrixMult_4_1(tangentMatrix, [textureNormal.x, textureNormal.y, textureNormal.z])
+    textureNormal = divide(V3(textureNormal[0], textureNormal[1], textureNormal[2]), norm(V3(textureNormal[0], textureNormal[1], textureNormal[2])))
+    intensity = dot(textureNormal, negative(render.directional_light))
+  else:
+    intensity = dot(normal, negative(render.directional_light))
 
   b = b*intensity if b*intensity <=1 else 1
   g = g*intensity if g*intensity <=1 else 1

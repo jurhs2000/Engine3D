@@ -56,6 +56,10 @@ def divide(v3, d):
     print('division by zero')
     return V3(0, 0, 0)
 
+def mult(v3, m):
+  product = V3(v3.x * m, v3.y * m, v3.z * m)
+  return product
+
 def cross(a, b):
   axb = V3(a[1] * b[2] - a[2] * b[1],
          a[2] * b[0] - a[0] * b[2],

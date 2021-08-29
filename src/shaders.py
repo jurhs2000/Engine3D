@@ -410,3 +410,90 @@ def outline(render, **kwargs):
   r = r if r <=1 else 1
 
   return r, g, b
+
+def snow(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  b, g, r = kwargs['color']
+  tA, tB, tC = kwargs['textureCoords']
+  nA, nB, nC = kwargs['normals']
+  A, B, C = kwargs['vertices']
+  color = newColor(1,1,1)
+
+  b /= 255
+  g /= 255
+  r /= 255
+
+  if render.active_texture:
+    tx = tA[0] * u + tB[0] * v + tC[0] * w
+    ty = tA[1] * u + tB[1] * v + tC[1] * w
+    textureColor = render.active_texture.getColor(tx, ty)
+    b *= textureColor[0] / 255
+    g *= textureColor[1] / 255
+    r *= textureColor[2] / 255
+
+  nX = nA[0] * u + nB[0] * v + nC[0] * w
+  nY = nA[1] * u + nB[1] * v + nC[1] * w
+  nZ = nA[2] * u + nB[2] * v + nC[2] * w
+
+  normal = V3(nX, nY, nZ)
+  intensity = dot(normal, negative(render.directional_light))
+  b = b*intensity
+  g = g*intensity
+  r = r*intensity
+
+  forwardVector = V3(0,-1,1)
+  parallel = dot(normal, forwardVector)
+  b = color[0]/255 * (1 - parallel) if color[0]/255 * (1 - parallel)>b else b
+  g = color[1]/255 * (1 - parallel) if color[1]/255 * (1 - parallel)>g else g
+  r = color[2]/255 * (1 - parallel) if color[2]/255 * (1 - parallel)>r else r
+  b = float(abs(b*(1-pow((intensity+1),-10))))
+  g = float(abs(g*(1-pow((intensity+1),-10))))
+  r = float(abs(r*(1-pow((intensity+1),-10))))
+
+  b = b if b <=1 else 1
+  g = g if g <=1 else 1
+  r = r if r <=1 else 1
+
+  if intensity > 0:
+    return r, g, b
+  else:
+    return 0, 0, 0
+
+def accentuate(render, **kwargs):
+  u, v, w = kwargs['baryCoords']
+  b, g, r = kwargs['color']
+  tA, tB, tC = kwargs['textureCoords']
+  nA, nB, nC = kwargs['normals']
+  color = kwargs['highColor']
+
+  b /= 255
+  g /= 255
+  r /= 255
+
+  if render.active_texture:
+    tx = tA[0] * u + tB[0] * v + tC[0] * w
+    ty = tA[1] * u + tB[1] * v + tC[1] * w
+    textureColor = render.active_texture.getColor(tx, ty)
+    b *= textureColor[0] / 255
+    g *= textureColor[1] / 255
+    r *= textureColor[2] / 255
+
+  nX = nA[0] * u + nB[0] * v + nC[0] * w
+  nY = nA[1] * u + nB[1] * v + nC[1] * w
+  nZ = nA[2] * u + nB[2] * v + nC[2] * w
+
+  normal = V3(nX, nY, nZ)
+  intensity = dot(normal, negative(render.directional_light))
+
+  b = color[0]/255 if color[0]/255 > b else b
+  g = color[1]/255 if color[1]/255 > g else g
+  r = color[2]/255 if color[2]/255 > r else r
+
+  b = b*intensity if b*intensity <=1 else 1
+  g = g*intensity if g*intensity <=1 else 1
+  r = r*intensity if r*intensity <=1 else 1
+
+  if intensity > 0:
+    return r, g, b
+  else:
+    return 0, 0, 0

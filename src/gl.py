@@ -68,12 +68,12 @@ class Renderer(object):
     up = cross(forward, right)
     up = divide(up, norm(up))
 
-    camMatrix = [[right[0],up[0],forward[0],camPosition.x],
-                [right[1],up[1],forward[1],camPosition.y],
-                [right[2],up[2],forward[2],camPosition.z],
-                [0,0,0,1]]
+    self.camMatrix = [[right[0],up[0],forward[0],camPosition.x],
+                      [right[1],up[1],forward[1],camPosition.y],
+                      [right[2],up[2],forward[2],camPosition.z],
+                      [0,0,0,1]]
 
-    self.viewMatrix = inv(camMatrix)
+    self.viewMatrix = inv(self.camMatrix)
 
   def glProjectionMatrix(self, n = 0.1, f = 1000, fov = 60 ):
     t = top(fov, n)
@@ -186,6 +186,7 @@ class Renderer(object):
         triangleVcam[0],triangleVcam[1],triangleVcam[2],
         textureCoords=(textureV[0], textureV[1], textureV[2]),
         vertices=(triangleV[0],triangleV[1],triangleV[2]),
+        originalVertices=(vertices[0],vertices[1],vertices[2]),
         normals=(normals[0],normals[1],normals[2])
       )
       if vertCount == 4:
@@ -193,6 +194,7 @@ class Renderer(object):
           triangleVcam[0],triangleVcam[2],triangleVcam[3],
           textureCoords=(textureV[0], textureV[2], textureV[3]),
           vertices=(triangleV[0],triangleV[2],triangleV[3]),
+          originalVertices=(vertices[0],vertices[2],vertices[3]),
           normals=(normals[0],normals[2],normals[3])
         )
       count += 1
@@ -346,7 +348,7 @@ class Renderer(object):
       flatBottom(A, B, D)
       flatTop(B, D, C)
 
-  def glTriangleBarycentric(self, A, B, C, textureCoords = (), vertices = (), normals = (), color = None):
+  def glTriangleBarycentric(self, A, B, C, textureCoords = (), vertices = (), originalVertices = (), normals = (), color = None):
     # Bounding box
     minX = round(min(A.x, B.x, C.x))
     minY = round(min(A.y, B.y, C.y))
@@ -368,7 +370,9 @@ class Renderer(object):
                                             vertices=vertices,
                                             baryCoords=(u,v,w),
                                             textureCoords=textureCoords,
+                                            originalVertices=originalVertices,
                                             normals=normals,
+                                            pixel=(x,y),
                                             triangleNormal = triangleNormal,
                                             color = color or self.curr_color)
               else:

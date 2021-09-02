@@ -20,6 +20,7 @@ class Renderer(object):
     self.normal_map = None
     self.active_shader = None
     self.directional_light = V3(0,0,-1)
+    self.background = None
 
   def glCreateWindow(self, width, height):
     self.width = width
@@ -55,6 +56,14 @@ class Renderer(object):
     self.pixels = [ [self.clear_color for y in range(self.height)] for x in range(self.width) ]
     
     self.zBuffer = [ [ float('inf') for y in range(self.height) ] for x in range(self.width) ]
+
+  def glClearBackground(self):
+    if self.background:
+      for x in range(self.vpX, self.vpX + self.vpWidth):
+        for y in range(self.vpY, self.vpY + self.vpHeight):
+          tx = (x - self.vpX) / self.vpWidth
+          ty = (y - self.vpY) / self.vpHeight
+          self.glPoint(x,y, self.background.getColor(tx, ty))
 
   def glColor(self, r, g, b):
     self.curr_color = newColor(r, g, b)

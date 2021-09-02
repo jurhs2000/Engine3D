@@ -1,4 +1,3 @@
-import functools
 from src.shaders import *
 from src.objLoader import Texture, TextureBMP
 from src.glTypes import V3, newColor

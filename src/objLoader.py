@@ -88,5 +88,11 @@ class Texture(object):
       y = round((1-ty) * self.image.size[1])
       if x < self.image.size[0] and y < self.image.size[1]:
         return self.pixels[x][y]
+      elif x > self.image.size[0] and y < self.image.size[1]:
+        return self.pixels[self.image.size[0]-1][y]
+      elif x < self.image.size[0] and y > self.image.size[1]:
+        return self.pixels[x][self.image.size[1]-1]
+      else:
+        return self.pixels[self.image.size[0]-1][self.image.size[1]-1]
     else:
       return newColor(0,0,0)

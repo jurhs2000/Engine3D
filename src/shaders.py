@@ -205,11 +205,17 @@ def textureBlend(render, **kwargs):
   g *= intensity
   r *= intensity
 
-  if render.active_texture2:
-    textureColor = render.active_texture2.getColor(tx, ty)
+  if render.active_texture_2:
+    textureColor = render.active_texture_2.getColor(tx, ty)
     b += (textureColor[0] / 255) * (1 - intensity)
     g += (textureColor[1] / 255) * (1 - intensity)
     r += (textureColor[2] / 255) * (1 - intensity)
+
+  b = 1 if b > 1 else (0 if b < 0 else b)
+  g = 1 if g > 1 else (0 if g < 0 else g)
+  r = 1 if r > 1 else (0 if r < 0 else r)
+
+  return r, g, b
 
   return r, g, b
 
@@ -234,9 +240,9 @@ def gradient(render, **kwargs):
   normal = V3(nX, nY, nZ)
   intensity = dot(normal, negative(render.directional_light))
 
-  b = b*intensity if b*intensity <=1 else 1
-  g = g*intensity if g*intensity <=1 else 1
-  r = r*intensity if r*intensity <=1 else 1
+  b = b*intensity if 0 <= b*intensity <=1 else (0 if b*intensity < 0 else 1)
+  g = g*intensity if 0 <= g*intensity <=1 else (0 if g*intensity < 0 else 1)
+  r = r*intensity if 0 <= r*intensity <=1 else (0 if r*intensity < 0 else 1)
 
   if intensity > 0:
     return r, g, b
@@ -446,9 +452,12 @@ def snow(render, **kwargs):
   b = color[0]/255 * (1 - parallel) if color[0]/255 * (1 - parallel)>b else b
   g = color[1]/255 * (1 - parallel) if color[1]/255 * (1 - parallel)>g else g
   r = color[2]/255 * (1 - parallel) if color[2]/255 * (1 - parallel)>r else r
-  b = float(abs(b*(1-pow((intensity+1),-10))))
-  g = float(abs(g*(1-pow((intensity+1),-10))))
-  r = float(abs(r*(1-pow((intensity+1),-10))))
+  try:
+    b = float(abs(b*(1-pow((intensity+1),-10))))
+    g = float(abs(g*(1-pow((intensity+1),-10))))
+    r = float(abs(r*(1-pow((intensity+1),-10))))
+  except:
+    pass
 
   b = b if b <=1 else 1
   g = g if g <=1 else 1
@@ -531,8 +540,8 @@ def normalMap(render, **kwargs):
     textureNormal = divide(textureNormal, norm(textureNormal))
     edge1 = substract(B,A)
     edge2 = substract(C,A)
-    deltaUV1 = substract(V3(tB[0], tB[1], tB[2]), V3(tA[0], tA[1], tA[2]))
-    deltaUV2 = substract(V3(tC[0], tC[1], tC[2]), V3(tA[0], tA[1], tA[2]))
+    deltaUV1 = substract(V3(tB[0], tB[1], 0), V3(tA[0], tA[1], 0))
+    deltaUV2 = substract(V3(tC[0], tC[1], 0), V3(tA[0], tA[1], 0))
     f = 1 / (deltaUV1[0] * deltaUV2[1] - deltaUV2[0] * deltaUV1[1])
     tangent = [f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0]),
                f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1]),
